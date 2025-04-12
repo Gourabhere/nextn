@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -159,4 +160,8 @@ body {
   padding: 20px;
   margin-bottom: 20px;
   background-color: #f9f9f9;
+}
+
+.font-comic {
+  font-family: 'Comic Neue', cursive;
 }

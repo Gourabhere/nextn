@@ -17,6 +17,7 @@ const DUMMY_IMAGE_URL = 'https://picsum.photos/512/384';
 export default function Home() {
   const [storyTitle, setStoryTitle] = useState<string>('');
   const [storyPages, setStoryPages] = useState<string[]>([]);
+  const [storyImages, setStoryImages] = useState<string[]>([]);
   const [pageText, setPageText] = useState<string>('');
   const [storyImageUrl, setStoryImageUrl] = useState<string>(DUMMY_IMAGE_URL);
   const [childAge, setChildAge] = useState<number>(5);
@@ -25,6 +26,7 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [readAloud, setReadAloud] = useState<boolean>(false);
   const [utterance, setUtterance] = useState<SpeechSynthesisUtterance | null>(null);
+  const [fontSize, setFontSize] = useState<number>(24); // Default font size
 
   const {toast} = useToast();
 
@@ -44,7 +46,11 @@ export default function Home() {
   useEffect(() => {
     if (storyPages.length > 0) {
       setPageText(storyPages[pageNumber]);
-      handleGenerateVisual();
+      if (storyImages[pageNumber]) {
+        setStoryImageUrl(storyImages[pageNumber]);
+      } else {
+        handleGenerateVisual();
+      }
     }
   }, [pageNumber, storyPages]);
 
@@ -66,6 +72,13 @@ export default function Home() {
       setStoryPages(pages);
       setPageNumber(0);
       setPageText(pages[0]);
+      setStoryImages([]); // Clear previous images
+      
+      // Generate images for all sentences upfront
+      for (let i = 0; i < pages.length; i++) {
+        const visualResult = await generateStoryVisuals({storyText: pages[i], style: 'cartoonish, playful'});
+        setStoryImages(prev => [...prev, visualResult.imageUrl]);
+      }
     } catch (error: any) {
       console.error('Story generation failed:', error);
       toast({
@@ -83,6 +96,12 @@ export default function Home() {
     try {
       const visualResult = await generateStoryVisuals({storyText: pageText, style: 'cartoonish, playful'});
       setStoryImageUrl(visualResult.imageUrl);
+      // Update the image in the array
+      setStoryImages(prev => {
+        const newImages = [...prev];
+        newImages[pageNumber] = visualResult.imageUrl;
+        return newImages;
+      });
     } catch (error: any) {
       console.error('Visual generation failed:', error);
       toast({
@@ -132,6 +151,14 @@ export default function Home() {
     });
   };
 
+  const increaseFontSize = () => {
+    setFontSize(prev => Math.min(prev + 4, 48));
+  };
+
+  const decreaseFontSize = () => {
+    setFontSize(prev => Math.max(prev - 4, 16));
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-lavender-50 py-6">
       <header className="text-center mb-8">
@@ -147,8 +174,17 @@ export default function Home() {
               <CardDescription className="text-gray-500">Page {pageNumber + 1} of {storyPages.length}</CardDescription>
             </CardHeader>
             <CardContent className="p-6">
-              <img src={storyImageUrl} alt={storyTitle} className="w-full rounded-md mb-4"/>
-              <p className="text-gray-700 leading-relaxed">{pageText}</p>
+              <div className="relative">
+                <img src={storyImageUrl} alt={storyTitle} className="w-full rounded-md mb-4"/>
+                <div className="absolute bottom-0 left-0 right-0 p-4 bg-black bg-opacity-50">
+                  <p 
+                    className="text-white font-comic text-center"
+                    style={{ fontSize: `${fontSize}px` }}
+                  >
+                    {pageText}
+                  </p>
+                </div>
+              </div>
             </CardContent>
             <div className="flex justify-between items-center px-6 py-4 bg-gray-50 border-t border-gray-200">
               <Button variant="outline" onClick={handlePreviousPage} disabled={pageNumber === 0}>
@@ -156,10 +192,16 @@ export default function Home() {
               </Button>
               <div className="flex space-x-2">
                 <Button onClick={handleGenerateVisual} disabled={isGenerating}>
-                  {isGenerating ? 'Generating...' : 'Generate Visual'}
+                  {isGenerating ? 'Generating...' : 'Regenerate Visual'}
                 </Button>
                 <Button onClick={handleReadAloud} disabled={isGenerating}>
                   {readAloud ? 'Stop Reading' : 'Read Aloud'}
+                </Button>
+                <Button onClick={increaseFontSize} disabled={isGenerating}>
+                  A+
+                </Button>
+                <Button onClick={decreaseFontSize} disabled={isGenerating}>
+                  A-
                 </Button>
                 <Button onClick={handleExportPdf}>Export to PDF</Button>
               </div>
