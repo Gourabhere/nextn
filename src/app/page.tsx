@@ -16,7 +16,8 @@ const DUMMY_IMAGE_URL = 'https://picsum.photos/512/384';
 
 export default function Home() {
   const [storyTitle, setStoryTitle] = useState<string>('');
-  const [storyText, setStoryText] = useState<string>('');
+  const [storyPages, setStoryPages] = useState<string[]>([]); // Array to hold story pages
+  const [pageText, setPageText] = useState<string>(''); // Current page text
   const [storyImageUrl, setStoryImageUrl] = useState<string>(DUMMY_IMAGE_URL);
   const [childAge, setChildAge] = useState<number>(5);
   const [storyTheme, setStoryTheme] = useState<string>('Adventure');
@@ -30,7 +31,7 @@ export default function Home() {
   const {register, handleSubmit, formState: {errors}} = useForm();
 
   useEffect(() => {
-    if (readAloud && storyText) {
+    if (readAloud && pageText) {
       handleReadAloud();
     }
     return () => {
@@ -38,7 +39,14 @@ export default function Home() {
         window.speechSynthesis.cancel();
       }
     };
-  }, [storyText, readAloud]);
+  }, [pageText, readAloud]);
+
+  useEffect(() => {
+    if (storyPages.length > 0) {
+      setPageText(storyPages[pageNumber]);
+      handleGenerateVisual();
+    }
+  }, [pageNumber, storyPages]);
 
   const onSubmit = async (data: any) => {
     setChildAge(Number(data.childAge));
@@ -51,12 +59,16 @@ export default function Home() {
     try {
       const storyResult = await generateDailyStory({childAge, storyTheme});
       setStoryTitle(storyResult.title);
-      setStoryText(storyResult.story);
+
+      // Split the story into pages (adjust the split criteria as needed)
+      const pages = storyResult.story.split('\n\n'); //split based on paragraph
+      setStoryPages(pages);
+      setPageNumber(0); // Reset to the first page
+      setPageText(pages[0]);
 
       // Generate initial visual for the first page
-      const visualResult = await generateStoryVisuals({storyText: storyResult.story, style: 'cartoonish, playful'});
-      setStoryImageUrl(visualResult.imageUrl);
-      setPageNumber(0); // Reset to the first page
+      // const visualResult = await generateStoryVisuals({storyText: storyResult.story, style: 'cartoonish, playful'});
+      // setStoryImageUrl(visualResult.imageUrl);
     } catch (error: any) {
       console.error('Story generation failed:', error);
       toast({
@@ -72,7 +84,7 @@ export default function Home() {
   const handleGenerateVisual = async () => {
     setIsGenerating(true);
     try {
-      const visualResult = await generateStoryVisuals({storyText: storyText, style: 'cartoonish, playful'});
+      const visualResult = await generateStoryVisuals({storyText: pageText, style: 'cartoonish, playful'});
       setStoryImageUrl(visualResult.imageUrl);
     } catch (error: any) {
       console.error('Visual generation failed:', error);
@@ -87,7 +99,9 @@ export default function Home() {
   };
 
   const handleNextPage = () => {
-    setPageNumber((prevPageNumber) => prevPageNumber + 1);
+    if (pageNumber < storyPages.length - 1) {
+      setPageNumber((prevPageNumber) => prevPageNumber + 1);
+    }
   };
 
   const handlePreviousPage = () => {
@@ -102,7 +116,7 @@ export default function Home() {
     }
 
     const synth = window.speechSynthesis;
-    const utterThis = new SpeechSynthesisUtterance(storyText);
+    const utterThis = new SpeechSynthesisUtterance(pageText);
     utterThis.onend = () => {
       setReadAloud(false);
     };
@@ -128,16 +142,16 @@ export default function Home() {
         <p className="text-md text-gray-600">A new bedtime story, every night.</p>
       </header>
 
-      {storyText ? (
+      {storyPages.length > 0 ? (
         <div className="container mx-auto px-4">
           <Card className="shadow-lg rounded-lg overflow-hidden">
             <CardHeader>
               <CardTitle className="text-2xl font-semibold text-gray-800">{storyTitle}</CardTitle>
-              <CardDescription className="text-gray-500">Page {pageNumber + 1}</CardDescription>
+              <CardDescription className="text-gray-500">Page {pageNumber + 1} of {storyPages.length}</CardDescription>
             </CardHeader>
             <CardContent className="p-6">
               <img src={storyImageUrl} alt={storyTitle} className="w-full rounded-md mb-4"/>
-              <p className="text-gray-700 leading-relaxed">{storyText}</p>
+              <p className="text-gray-700 leading-relaxed">{pageText}</p>
             </CardContent>
             <div className="flex justify-between items-center px-6 py-4 bg-gray-50 border-t border-gray-200">
               <Button variant="outline" onClick={handlePreviousPage} disabled={pageNumber === 0}>
@@ -152,7 +166,7 @@ export default function Home() {
                 </Button>
                 <Button onClick={handleExportPdf}>Export to PDF</Button>
               </div>
-              <Button onClick={handleNextPage} disabled={isGenerating}>
+              <Button onClick={handleNextPage} disabled={pageNumber === storyPages.length - 1}>
                 Next Page
               </Button>
             </div>
