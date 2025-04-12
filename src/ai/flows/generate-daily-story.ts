@@ -40,7 +40,7 @@ const prompt = ai.definePrompt({
       story: z.string().describe('The generated story.'),
     }),
   },
-  prompt: `You are a children's story writer. You will generate a unique, age-appropriate story for a child. The story should have simple vocabulary, an engaging plot, positive themes, and appropriate length for bedtime.
+  prompt: `You are a children's story writer. You will generate a unique, age-appropriate story for a child. The story should have simple vocabulary, an engaging plot, positive themes, and appropriate length for bedtime. The story should be long enough to be split into 10 sentences.
 
 Age: {{{childAge}}}
 Theme: {{{storyTheme}}}

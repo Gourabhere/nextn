@@ -16,15 +16,15 @@ const DUMMY_IMAGE_URL = 'https://picsum.photos/512/384';
 
 export default function Home() {
   const [storyTitle, setStoryTitle] = useState<string>('');
-  const [storyPages, setStoryPages] = useState<string[]>([]); // Array to hold story pages
-  const [pageText, setPageText] = useState<string>(''); // Current page text
+  const [storyPages, setStoryPages] = useState<string[]>([]);
+  const [pageText, setPageText] = useState<string>('');
   const [storyImageUrl, setStoryImageUrl] = useState<string>(DUMMY_IMAGE_URL);
   const [childAge, setChildAge] = useState<number>(5);
   const [storyTheme, setStoryTheme] = useState<string>('Adventure');
-  const [pageNumber, setPageNumber] = useState<number>(0); // Track current page number
-  const [isGenerating, setIsGenerating] = useState<boolean>(false); // Track story generation status
+  const [pageNumber, setPageNumber] = useState<number>(0);
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [readAloud, setReadAloud] = useState<boolean>(false);
-  const [utterance, setUtterance] = useState<SpeechSynthesisUtterance | null>(null); // Keep track of the utterance
+  const [utterance, setUtterance] = useState<SpeechSynthesisUtterance | null>(null);
 
   const {toast} = useToast();
 
@@ -60,15 +60,12 @@ export default function Home() {
       const storyResult = await generateDailyStory({childAge, storyTheme});
       setStoryTitle(storyResult.title);
 
-      // Split the story into pages (adjust the split criteria as needed)
-      const pages = storyResult.story.split('\n\n'); //split based on paragraph
+      // Split the story into sentences, limit to 10 pages
+      const sentences = storyResult.story.split('.').map(s => s.trim()).filter(s => s.length > 0);
+      const pages = sentences.slice(0, 10); // Take only the first 10 sentences
       setStoryPages(pages);
-      setPageNumber(0); // Reset to the first page
+      setPageNumber(0);
       setPageText(pages[0]);
-
-      // Generate initial visual for the first page
-      // const visualResult = await generateStoryVisuals({storyText: storyResult.story, style: 'cartoonish, playful'});
-      // setStoryImageUrl(visualResult.imageUrl);
     } catch (error: any) {
       console.error('Story generation failed:', error);
       toast({
@@ -124,7 +121,7 @@ export default function Home() {
       setReadAloud(false);
     };
     synth.speak(utterThis);
-    setUtterance(utterThis); // Save the utterance
+    setUtterance(utterThis);
     setReadAloud(true);
   };
 
