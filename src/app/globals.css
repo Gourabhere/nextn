@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Bubblegum+Sans&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -164,4 +164,117 @@ body {
 
 .font-comic {
   font-family: 'Comic Neue', cursive;
+}
+
+/* Playful background pattern */
+.bg-lavender-50 {
+  background: linear-gradient(45deg, #f3e7ff 25%, transparent 25%) -50px 0,
+              linear-gradient(-45deg, #f3e7ff 25%, transparent 25%) -50px 0,
+              linear-gradient(45deg, transparent 75%, #f3e7ff 75%),
+              linear-gradient(-45deg, transparent 75%, #f3e7ff 75%);
+  background-size: 100px 100px;
+  background-color: #fcf7ff;
+}
+
+/* Cartoon-style card */
+.cartoon-card {
+  border: 3px solid #8b5cf6;
+  border-radius: 20px;
+  box-shadow: 8px 8px 0 rgba(139, 92, 246, 0.3);
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.cartoon-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 12px 12px 0 rgba(139, 92, 246, 0.4);
+}
+
+/* Playful button styles */
+.cartoon-button {
+  border: 2px solid #8b5cf6;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #9f7aea, #8b5cf6);
+  color: white;
+  font-family: 'Bubblegum Sans', cursive;
+  padding: 10px 20px;
+  transition: all 0.3s ease;
+  text-shadow: 1px 1px 0 #6d28d9;
+  box-shadow: 3px 3px 0 #6d28d9;
+}
+
+.cartoon-button:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 5px 5px 0 #6d28d9;
+}
+
+.cartoon-button:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 1px 1px 0 #6d28d9;
+}
+
+/* Input field styling */
+.cartoon-input {
+  border: 3px solid #8b5cf6;
+  border-radius: 15px;
+  padding: 10px 15px;
+  font-family: 'Comic Neue', cursive;
+  background-color: #fcf7ff;
+  transition: all 0.3s ease;
+  box-shadow: inset 2px 2px 5px rgba(139, 92, 246, 0.2);
+}
+
+.cartoon-input:focus {
+  outline: none;
+  border-color: #9f7aea;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3);
+}
+
+/* Playful title styles */
+.cartoon-title {
+  font-family: 'Bubblegum Sans', cursive;
+  color: #8b5cf6;
+  text-shadow: 2px 2px 0 #6d28d9;
+  letter-spacing: 1px;
+}
+
+/* Bouncing animation */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.bounce-hover:hover {
+  animation: bounce 0.5s ease infinite;
+}
+
+/* Floating animation for cards */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Rainbow text effect */
+.rainbow-text {
+  background: linear-gradient(
+    45deg,
+    #ff6b6b,
+    #ffd93d,
+    #6fb3b8,
+    #8b5cf6,
+    #ff6b6b
+  );
+  background-size: 200% auto;
+  color: transparent;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: rainbow 5s linear infinite;
+}
+
+@keyframes rainbow {
+  to { background-position: 200% center; }
 }

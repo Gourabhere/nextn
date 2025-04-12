@@ -40,12 +40,32 @@ const prompt = ai.definePrompt({
       story: z.string().describe('The generated story.'),
     }),
   },
-  prompt: `You are a children's story writer. You will generate a unique, age-appropriate story for a child. The story should have simple vocabulary, an engaging plot, positive themes, and appropriate length for bedtime. The story should be long enough to be split into 10 sentences.
+  prompt: `You are a skilled children's story writer tasked with crafting a unique, age-appropriate bedtime story for a child. Create a story with simple, clear vocabulary, an engaging and cohesive plot, positive themes, and a length suitable for bedtime reading. The story should consist of exactly 10 sentences to ensure a complete yet concise narrative.
 
 Age: {{{childAge}}}
+
 Theme: {{{storyTheme}}}
 
-Write a story with the above criteria and respond with a title and the story.`,
+IMPORTANT REQUIREMENTS:
+1. The story MUST be centered around the theme "{{{storyTheme}}}" - this theme should drive the entire narrative
+2. Create ORIGINAL characters and settings specific to this theme
+3. Use age-appropriate language for a {{{childAge}}}-year-old child
+4. The story must be EXACTLY 10 sentences long
+5. Each sentence should advance the plot in a meaningful way
+6. Include descriptive language that brings the story to life
+7. End with a satisfying conclusion that ties to the theme
+
+For example:
+- If theme is "Space Adventure": Create a unique story about exploring new planets or meeting friendly aliens
+- If theme is "Friendship": Develop a story about making new friends or helping others
+- If theme is "Magic": Craft a tale about discovering magical powers or enchanted objects
+- If theme is "Animals": Tell a story about unique animal characters or wildlife adventures
+
+Make the story ENGAGING and MEMORABLE, avoiding generic plots. Each generated story should feel fresh and different from others.
+
+Respond with:
+1. A creative, theme-appropriate title
+2. A 10-sentence story that follows all requirements above`,
 });
 
 const generateDailyStoryFlow = ai.defineFlow<

@@ -12,7 +12,7 @@ import {useToast} from '@/hooks/use-toast';
 import {useEffect, useState} from 'react';
 import {useForm} from 'react-hook-form';
 
-const DUMMY_IMAGE_URL = 'https://picsum.photos/512/384';
+const DUMMY_IMAGE_URL = 'https://play-lh.googleusercontent.com/G58Uh-xhf1kmq_xVDNjNRxQHcQnv2wtxjQMvr7F-JM53KkN5E6fnS58vYhjIzbOwIM0';//'https://picsum.photos/512/384';
 
 export default function Home() {
   const [storyTitle, setStoryTitle] = useState<string>('');
@@ -26,12 +26,46 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [readAloud, setReadAloud] = useState<boolean>(false);
   const [utterance, setUtterance] = useState<SpeechSynthesisUtterance | null>(null);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [fontSize, setFontSize] = useState<number>(24); // Default font size
 
   const {toast} = useToast();
 
   const {register, handleSubmit, formState: {errors}} = useForm();
 
+  // Initialize speech synthesis and load voices
+  useEffect(() => {
+    const loadVoices = () => {
+      const availableVoices = window.speechSynthesis.getVoices();
+      setVoices(availableVoices);
+      
+      // Try to find a child-friendly or female voice
+      const preferredVoice = availableVoices.find(
+        voice => 
+          voice.name.toLowerCase().includes('female') ||
+          voice.name.toLowerCase().includes('girl') ||
+          voice.name.toLowerCase().includes('child')
+      ) || availableVoices[0];
+      
+      setSelectedVoice(preferredVoice);
+    };
+
+    // Load voices when they're ready
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+      loadVoices(); // Initial load attempt
+    }
+
+    // Cleanup
+    return () => {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  // Handle read aloud state changes
   useEffect(() => {
     if (readAloud && pageText) {
       handleReadAloud();
@@ -125,23 +159,87 @@ export default function Home() {
   };
 
   const handleReadAloud = () => {
-    if (window.speechSynthesis.speaking) {
-      window.speechSynthesis.cancel();
+    if (typeof window === 'undefined') return;
+
+    if (!window.speechSynthesis) {
+      toast({
+        title: 'Speech Synthesis Not Available',
+        description: 'Your browser does not support text-to-speech.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Stop current speech if any
+    window.speechSynthesis.cancel();
+    
+    if (readAloud) {
       setReadAloud(false);
       return;
     }
 
-    const synth = window.speechSynthesis;
-    const utterThis = new SpeechSynthesisUtterance(pageText);
-    utterThis.onend = () => {
+    if (!pageText) {
+      toast({
+        title: 'No Text to Read',
+        description: 'There is no text available to read.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const utterThis = new SpeechSynthesisUtterance(pageText);
+      
+      // Basic configuration
+      utterThis.lang = 'en-US';
+      utterThis.rate = 0.9;
+      utterThis.pitch = 1.0;
+      utterThis.volume = 1.0;
+
+      // Try to set voice
+      const voices = window.speechSynthesis.getVoices();
+      const englishVoice = voices.find(voice => voice.lang.startsWith('en'));
+      if (englishVoice) {
+        utterThis.voice = englishVoice;
+      }
+
+      // Event handlers
+      utterThis.onstart = () => {
+        console.log('Started speaking');
+        setReadAloud(true);
+      };
+
+      utterThis.onend = () => {
+        console.log('Finished speaking');
+        setReadAloud(false);
+        setUtterance(null);
+      };
+
+      utterThis.onerror = (event: SpeechSynthesisErrorEvent) => {
+        console.log('Speech error:', event);
+        setReadAloud(false);
+        setUtterance(null);
+        toast({
+          title: 'Read Aloud Error',
+          description: 'Failed to read the text. Please try again.',
+          variant: 'destructive',
+        });
+      };
+
+      // Speak
+      window.speechSynthesis.speak(utterThis);
+      setUtterance(utterThis);
+      setReadAloud(true);
+
+    } catch (error) {
+      console.error('Speech synthesis error:', error);
       setReadAloud(false);
-    };
-    utterThis.onerror = () => {
-      setReadAloud(false);
-    };
-    synth.speak(utterThis);
-    setUtterance(utterThis);
-    setReadAloud(true);
+      toast({
+        title: 'Read Aloud Error',
+        description: 'Failed to initialize text-to-speech. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleExportPdf = () => {
@@ -162,21 +260,21 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-lavender-50 py-6">
       <header className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-violet-700">Rayesha&apos;s Nightly Tales</h1>
-        <p className="text-md text-gray-600">A new bedtime story, every night.</p>
+        <h1 className="text-4xl font-bold cartoon-title rainbow-text bounce-hover">Rayesha&apos;s Nightly Tales</h1>
+        <p className="text-md text-violet-600 font-comic">A new bedtime story, every night.</p>
       </header>
 
       {storyPages.length > 0 ? (
         <div className="container mx-auto px-4">
-          <Card className="shadow-lg rounded-lg overflow-hidden">
+          <Card className="cartoon-card float">
             <CardHeader>
-              <CardTitle className="text-2xl font-semibold text-gray-800">{storyTitle}</CardTitle>
-              <CardDescription className="text-gray-500">Page {pageNumber + 1} of {storyPages.length}</CardDescription>
+              <CardTitle className="text-2xl cartoon-title">{storyTitle}</CardTitle>
+              <CardDescription className="text-violet-600 font-comic">Page {pageNumber + 1} of {storyPages.length}</CardDescription>
             </CardHeader>
             <CardContent className="p-6">
               <div className="relative">
-                <img src={storyImageUrl} alt={storyTitle} className="w-full rounded-md mb-4"/>
-                <div className="absolute bottom-0 left-0 right-0 p-4 bg-black bg-opacity-50">
+                <img src={storyImageUrl} alt={storyTitle} className="w-full rounded-2xl shadow-lg mb-4"/>
+                <div className="absolute bottom-0 left-0 right-0 p-4 bg-violet-900 bg-opacity-70 rounded-b-2xl backdrop-blur-sm">
                   <p 
                     className="text-white font-comic text-center"
                     style={{ fontSize: `${fontSize}px` }}
@@ -186,26 +284,45 @@ export default function Home() {
                 </div>
               </div>
             </CardContent>
-            <div className="flex justify-between items-center px-6 py-4 bg-gray-50 border-t border-gray-200">
-              <Button variant="outline" onClick={handlePreviousPage} disabled={pageNumber === 0}>
+            <div className="flex justify-between items-center px-6 py-4 bg-violet-50 border-t border-violet-200 rounded-b-lg">
+              <Button variant="outline" onClick={handlePreviousPage} disabled={pageNumber === 0} className="cartoon-button">
                 Previous Page
               </Button>
               <div className="flex space-x-2">
-                <Button onClick={handleGenerateVisual} disabled={isGenerating}>
+                <Button onClick={handleGenerateVisual} disabled={isGenerating} className="cartoon-button">
                   {isGenerating ? 'Generating...' : 'Regenerate Visual'}
                 </Button>
-                <Button onClick={handleReadAloud} disabled={isGenerating}>
-                  {readAloud ? 'Stop Reading' : 'Read Aloud'}
+                <Button 
+                  onClick={handleReadAloud} 
+                  disabled={isGenerating || !pageText} 
+                  className="cartoon-button flex items-center space-x-2"
+                >
+                  {readAloud ? (
+                    <>
+                      <span>Stop Reading</span>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="6" y="4" width="4" height="16"/>
+                        <rect x="14" y="4" width="4" height="16"/>
+                      </svg>
+                    </>
+                  ) : (
+                    <>
+                      <span>Read Aloud</span>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3"/>
+                      </svg>
+                    </>
+                  )}
                 </Button>
-                <Button onClick={increaseFontSize} disabled={isGenerating}>
+                <Button onClick={increaseFontSize} disabled={isGenerating} className="cartoon-button">
                   A+
                 </Button>
-                <Button onClick={decreaseFontSize} disabled={isGenerating}>
+                <Button onClick={decreaseFontSize} disabled={isGenerating} className="cartoon-button">
                   A-
                 </Button>
-                <Button onClick={handleExportPdf}>Export to PDF</Button>
+                <Button onClick={handleExportPdf} className="cartoon-button">Export to PDF</Button>
               </div>
-              <Button onClick={handleNextPage} disabled={pageNumber === storyPages.length - 1}>
+              <Button onClick={handleNextPage} disabled={pageNumber === storyPages.length - 1} className="cartoon-button">
                 Next Page
               </Button>
             </div>
@@ -213,29 +330,35 @@ export default function Home() {
         </div>
       ) : (
         <div className="container mx-auto px-4">
-          <Card className="shadow-lg rounded-lg overflow-hidden">
+          <Card className="cartoon-card float">
             <CardHeader>
-              <CardTitle className="text-2xl font-semibold text-gray-800">Customize Your Story</CardTitle>
-              <CardDescription className="text-gray-500">Enter details to generate a unique story.</CardDescription>
+              <CardTitle className="text-2xl cartoon-title">Customize Your Story</CardTitle>
+              <CardDescription className="text-violet-600 font-comic">Enter details to generate a unique story.</CardDescription>
             </CardHeader>
             <CardContent className="p-6">
               <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col space-y-4">
                 <div>
-                  <Label htmlFor="childAge">Child&apos;s Age</Label>
-                  <Input id="childAge" type="number" defaultValue={childAge}
-                         {...register('childAge', {required: 'Age is required', min: 1, max: 10})}/>
-                  {errors.childAge && <p className="text-red-500">{errors.childAge.message?.toString()}</p>}
+                  <Label htmlFor="childAge" className="text-violet-700 font-comic">Child&apos;s Age</Label>
+                  <Input 
+                    id="childAge" 
+                    type="number" 
+                    defaultValue={childAge}
+                    className="cartoon-input"
+                    {...register('childAge', {required: 'Age is required', min: 1, max: 10})}
+                  />
+                  {errors.childAge && <p className="text-red-500 font-comic">{errors.childAge.message?.toString()}</p>}
                 </div>
                 <div>
-                  <Label htmlFor="storyTheme">Story Theme</Label>
+                  <Label htmlFor="storyTheme" className="text-violet-700 font-comic">Story Theme</Label>
                   <Textarea
                     id="storyTheme"
                     defaultValue={storyTheme}
+                    className="cartoon-input resize-none"
                     {...register('storyTheme', {required: 'Theme is required'})}
-                    className="resize-none"/>
-                  {errors.storyTheme && <p className="text-red-500">{errors.storyTheme.message?.toString()}</p>}
+                  />
+                  {errors.storyTheme && <p className="text-red-500 font-comic">{errors.storyTheme.message?.toString()}</p>}
                 </div>
-                <Button type="submit" disabled={isGenerating}>
+                <Button type="submit" disabled={isGenerating} className="cartoon-button">
                   {isGenerating ? 'Generating...' : 'Generate Story'}
                 </Button>
               </form>
@@ -243,19 +366,19 @@ export default function Home() {
           </Card>
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" className="mt-4">
+              <Button variant="outline" className="mt-4 cartoon-button">
                 Open previous stories
               </Button>
             </SheetTrigger>
-            <SheetContent className="bg-teal-50">
+            <SheetContent className="bg-violet-50">
               <SheetHeader>
-                <SheetTitle>Previous Stories</SheetTitle>
-                <SheetDescription>
+                <SheetTitle className="cartoon-title">Previous Stories</SheetTitle>
+                <SheetDescription className="font-comic text-violet-600">
                   These are the bedtime stories of the past.
                 </SheetDescription>
               </SheetHeader>
               <SheetFooter>
-                <Button type="submit">Save</Button>
+                <Button type="submit" className="cartoon-button">Save</Button>
               </SheetFooter>
             </SheetContent>
           </Sheet>
@@ -263,7 +386,7 @@ export default function Home() {
       )}
 
       <footer className="text-center mt-8">
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-violet-600 font-comic">
           &copy; {new Date().getFullYear()} Rayesha&apos;s Nightly Tales. All rights reserved.
         </p>
       </footer>
